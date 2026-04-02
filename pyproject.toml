@@ -1,0 +1,28 @@
+[project]
+name = "agentic-job-hunting"
+version = "0.1.0"
+description = "Automated job detection, filtering, and resume tailoring pipeline"
+requires-python = ">=3.11"
+dependencies = [
+    "httpx[http2]",
+    "selectolax",
+    "apscheduler>=3.10,<4",
+    "aiosqlite",
+    "tenacity",
+    "structlog",
+    "rapidfuzz",
+    "pydantic>=2.0",
+    "pydantic-settings",
+    "python-dotenv",
+    "pyyaml",
+    "jinja2",
+    "anthropic",
+]
+
+[project.scripts]
+job-hunter = "src.main:run"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.2",
+]

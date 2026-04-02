@@ -1,0 +1,101 @@
+meta:
+  name: "Your Name"
+  email: "your.email@example.com"
+  phone: "(555) 123-4567"
+  linkedin: "https://www.linkedin.com/in/yourprofile/"
+  website: "https://yourwebsite.com/"
+  location: "City, State"
+
+education:
+  - institution: "University Name"
+    location: "City, State"
+    degree: "BS in Computer Science"
+    dates: "Aug. 2021 -- May 2025"
+    gpa: "3.5/4.0"
+    details:
+      - "Cumulative GPA: 3.5/4.0"
+      - "Relevant Coursework: Data Structures, OOP, Algorithms, Web Development"
+
+skills:
+  languages:
+    - Python
+    - Java
+    - JavaScript
+    - TypeScript
+    - SQL
+    - Go
+  frameworks:
+    - React.js
+    - Django
+    - Flask
+    - FastAPI
+    - Node.js
+    - PostgreSQL
+  devops:
+    - Docker
+    - Kubernetes
+    - AWS
+    - GitHub Actions
+    - Terraform
+    - CI/CD
+
+experiences:
+  - id: "exp-company1"
+    company: "Tech Company Name"
+    title: "Software Engineer"
+    dates: "Jan 2024 -- Present"
+    location: "San Francisco, CA"
+    bullets:
+      - text: "Built a real-time data processing pipeline handling 1M+ events/day"
+        metrics: "reduced latency from 5s to 100ms"
+      - text: "Led the migration of legacy monolith to microservices architecture"
+        metrics: "improved deployment frequency from monthly to daily"
+      - text: "Mentored 3 junior engineers on best practices in system design"
+        metrics: "all promoted to mid-level within 18 months"
+
+  - id: "exp-company2"
+    company: "Previous Company"
+    title: "Junior Software Engineer"
+    dates: "Jun 2023 -- Dec 2023"
+    location: "Austin, TX"
+    bullets:
+      - text: "Implemented authentication system supporting OAuth 2.0"
+        metrics: "enabled integration with 10+ third-party services"
+      - text: "Reduced API response time by 40% through query optimization"
+        metrics: "improved user experience across 100k+ active users"
+
+projects:
+  - id: "proj-openai-app"
+    name: "AI-Powered Job Application Assistant"
+    bullets:
+      - text: "Built an automated system that detects and applies to tech jobs"
+        metrics: "processes 6,000+ companies, saves 10+ hours per week"
+      - text: "Implemented AI resume tailoring using GPT-4o mini"
+        metrics: "91% cheaper than alternatives, identical quality"
+      - text: "Deployed Discord bot for human-in-the-loop approval"
+        metrics: "reduces token waste by 70% on unwanted jobs"
+
+  - id: "proj-data-dashboard"
+    name: "Real-Time Analytics Dashboard"
+    bullets:
+      - text: "Created interactive dashboard for monitoring application metrics"
+        metrics: "used by 50+ team members daily across 5 departments"
+      - text: "Implemented WebSocket support for real-time updates"
+        metrics: "reduced latency from 30s to <100ms"
+
+leadership:
+  - id: "lead-mentoring"
+    title: "Technical Mentor"
+    description: "Mentored 3 junior engineers on system design, code review, and career development. Created documentation for onboarding process used by entire team."
+
+  - id: "lead-speaking"
+    title: "Conference Speaker"
+    description: "Presented at 2 tech conferences on microservices architecture and cloud-native development. Reached 500+ engineers across both talks."
+
+# Instructions for use:
+# 1. Copy this file to master_resume.yaml (don't commit master_resume.yaml to GitHub)
+# 2. Replace placeholder values with your actual information
+# 3. Add/remove experiences, projects, and leadership entries as needed
+# 4. Each entry must have a unique 'id' field (used by the resume pipeline)
+# 5. Keep bullet_indices matching: typically 2-3 bullets per experience/project
+# 6. skills.certifications is optional - only add if relevant to target roles

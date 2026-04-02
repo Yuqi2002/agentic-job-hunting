@@ -1,0 +1,38 @@
+# Environment & Secrets
+.env
+.env.local
+.env.*.local
+
+# Databases
+data/jobs.db
+data/jobs.db-wal
+data/jobs.db-shm
+data/test_approval.db
+data/test_approval.db-wal
+data/test_approval.db-shm
+
+# Cache & Generated Files
+data/cache/
+data/debug_resume.tex
+data/tailored_resume.pdf
+
+# User-specific Resume (contains PII)
+data/master_resume.yaml
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.python-version
+*.egg-info/
+dist/
+build/
+
+# IDE & OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.env.swp
