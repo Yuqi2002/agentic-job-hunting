@@ -8,17 +8,24 @@ Automatically detect, filter, tailor, and apply to tech jobs using AI. Finds rol
 
 ## Features
 
-✅ **Job Detection** — Scrapes 6,262+ companies across Greenhouse, Lever, Ashby, HN
-✅ **Smart Filtering** — Role keywords, location matching, experience level validation
-✅ **Job Summaries** — GPT-4o mini extracts compensation + calculates resume match %
-✅ **Rich Discord Embeds** — Color-coded by match %, shows keywords + match reasoning
-✅ **Human-in-the-Loop Approval** — React ✅ to a message to trigger resume generation (not auto)
-✅ **AI Resume Generation** — GPT-4o mini-powered, modular, deterministic pipeline (91% cheaper)
-✅ **ATS Optimization** — 7-rule keyword matching, strong verbs, XYZ bullet structure
-✅ **PDF Compilation** — LaTeX-based, fully customizable resume template
-✅ **Smart Replies** — Bot replies to original message with named PDF: `Company_JobTitle_Resume.pdf`
-✅ **Always-On Scheduler** — Batch processing via APScheduler, systemd service-ready
-✅ **Configurable Roles & Locations** — Easy to modify for your target criteria
+### Detection & Filtering
+- ✅ **Job Detection** — Scrapes 6,262+ companies across Greenhouse, Lever, Ashby, HN
+- ✅ **Smart Filtering** — Role keywords, location matching, experience level validation
+- ✅ **Always-On Scheduler** — Batch processing via APScheduler, systemd service-ready
+
+### Job Summaries & Approval
+- ✅ **Job Summaries** — GPT-4o mini extracts compensation + calculates resume match %
+- ✅ **Rich Discord Embeds** — Color-coded by match %, shows keywords + match reasoning
+- ✅ **Human-in-the-Loop Approval** — React ✅ to a message to trigger resume generation (not auto)
+
+### AI Resume Generation
+- ✅ **AI Resume Generation** — GPT-4o mini-powered, modular, deterministic pipeline (91% cheaper)
+- ✅ **ATS Optimization** — 7-rule keyword matching, strong verbs, XYZ bullet structure
+- ✅ **PDF Compilation** — LaTeX-based, fully customizable resume template
+- ✅ **Smart Replies** — Bot replies to original message with named PDF: `Company_JobTitle_Resume.pdf`
+
+### Configuration
+- ✅ **Configurable Roles & Locations** — Easy to modify for your target criteria
 
 ---
 
@@ -52,7 +59,7 @@ When you approve a job (react ✅), the pipeline:
 ### 1. Clone & Install
 
 ```bash
-git clone https://github.com/yourusername/agentic-job-hunting
+git clone https://github.com/Yuqi2002/agentic-job-hunting
 cd agentic-job-hunting
 
 # Install uv if you don't have it
@@ -77,35 +84,83 @@ cp .env.example .env
 
 Optional: Set up Discord bot for human-in-the-loop approval (see [Discord Bot Setup](#discord-bot-setup) section for detailed instructions)
 
-### 3. Populate Your Resume
+### 3. Populate Your Master Resume (Critical Step)
 
-Edit `data/master_resume.yaml` with your actual experiences, projects, and leadership:
+The master resume is the **source of truth** for all your experiences, projects, and skills. The AI will use this to intelligently select the most relevant content for each job.
+
+**Copy the template:**
+```bash
+cp data/master_resume.example.yaml data/master_resume.yaml
+```
+
+**Key Principles:**
+
+1. **Include EVERYTHING** — Add every single experience, project, and skill you've had
+   - Don't pre-filter or limit to "only relevant" roles
+   - The AI is smart enough to select what matters for each job
+   - More content = better matching and more tailored resumes
+
+2. **Use specific, quantified bullet points** — Each bullet should include:
+   - What you built/accomplished
+   - Metrics: scale, users, performance gains, time saved, adoption, etc.
+   - Example: "Reduced API latency from 5s to 100ms" not "Improved performance"
+
+3. **Pressure Test Your Bullets** — This is critical!
+   - Open Claude (https://claude.ai) and chat with it about your bullet points
+   - Ask: "Does this bullet clearly show impact and use strong action verbs?"
+   - Example prompt: "Here are my resume bullets. Do they show quantified impact? Should I add metrics?"
+   - Refine until each bullet is compelling and specific
+
+**Structure:**
 
 ```yaml
+meta:
+  name: "Your Name"
+  email: "your.email@example.com"
+  phone: "(555) 123-4567"
+  linkedin: "https://www.linkedin.com/in/yourprofile/"
+  location: "City, State"
+
+skills:
+  languages: [Python, Java, JavaScript, ...]
+  frameworks: [React, Django, AWS, ...]
+  devops: [Docker, Kubernetes, GitHub Actions, ...]
+
 experiences:
-  - id: "exp-company1"
+  - id: "exp-company1"        # Unique identifier
     company: "Company Name"
     title: "Software Engineer"
     dates: "Jan 2024 -- Present"
     location: "San Francisco, CA"
     bullets:
-      - text: "Your bullet point text here"
-        metrics: "quantified impact"
-      - text: "Another bullet"
-        metrics: "more metrics"
+      - text: "Built a real-time data pipeline handling 1M+ events/day using Apache Kafka"
+        metrics: "reduced latency from 5s to 100ms, improved system stability"
+      - text: "Led migration of legacy monolith to microservices architecture"
+        metrics: "enabled 5x faster deployment cycles, improved team velocity"
+      - text: "Mentored 3 junior engineers on system design best practices"
+        metrics: "all 3 promoted to mid-level within 18 months"
 
 projects:
-  - id: "proj-myproject"
-    name: "Project Name"
+  - id: "proj-ai-app"         # Unique identifier
+    name: "AI-Powered Job Application Assistant"
     bullets:
-      - text: "What you built"
-        metrics: "scale/users/impact"
+      - text: "Automated job detection and resume tailoring system"
+        metrics: "scans 6,262+ companies, saves 10+ hours per week"
+      - text: "Implemented GPT-4o mini integration for AI resume optimization"
+        metrics: "91% cheaper than Claude Haiku, identical quality, 500+ jobs processed"
 
 leadership:
-  - id: "lead-speaking"
-    title: "Public Speaking"
-    description: "Your leadership description here"
+  - id: "lead-mentoring"
+    title: "Technical Mentor"
+    description: "Mentored 3 junior engineers on system design and career development. Created comprehensive onboarding documentation used across entire team."
 ```
+
+**Pro Tips:**
+- Each experience should have 2-4 bullets (not just 1)
+- Skills should be comprehensive: languages, frameworks, tools, DevOps, certifications
+- Use "Jan 2024 -- Present" format for consistency
+- Each bullet combines WHAT + HOW + IMPACT (metrics)
+- The system will intelligently pick 2-3 most relevant experiences per job
 
 ### 4. Update LaTeX Template (Optional)
 
@@ -292,7 +347,7 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 export PATH="$HOME/.local/bin:$PATH"
 
 # 3. Clone & setup
-git clone https://github.com/yourusername/agentic-job-hunting ~/job-hunter
+git clone https://github.com/Yuqi2002/agentic-job-hunting ~/job-hunter
 cd ~/job-hunter
 uv sync
 
@@ -571,4 +626,4 @@ A: Absolutely. `python test_e2e_approval.py` runs the full pipeline end-to-end l
 
 ---
 
-**Built by [Your Name]** | [GitHub](https://github.com/yourusername) | [LinkedIn](https://linkedin.com/in/yourusername)
+**Built by Yuqi Zhou** | [GitHub](https://github.com/Yuqi2002) | [LinkedIn](https://linkedin.com/in/yuqizhou2002/)
