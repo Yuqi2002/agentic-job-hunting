@@ -1,4 +1,4 @@
-"""Discord bot — listens for ✅ reactions and triggers resume generation."""
+"""Discord bot — listens for ✅ reactions and user-posted URLs to trigger resume generation."""
 from __future__ import annotations
 
 import re
@@ -8,6 +8,7 @@ import discord
 import yaml
 
 from src.db import Database
+from src.detection.url_scraper import extract_urls, fetch_job_from_url
 from src.logging import get_logger
 from src.notify.discord import DiscordNotifier
 from src.resume import generate_resume
@@ -36,10 +37,13 @@ class JobHunterBot(discord.Client):
         channel_id: int,
         bot_token: str,
     ) -> None:
-        # reactions = GUILD_MESSAGE_REACTIONS (non-privileged)
+        # guild_messages + reactions = non-privileged
+        # message_content = PRIVILEGED — must be enabled in Discord Developer Portal
         intents = discord.Intents.none()
         intents.guilds = True
         intents.reactions = True
+        intents.guild_messages = True
+        intents.message_content = True  # privileged intent: Bot → Privileged Gateway Intents
         super().__init__(intents=intents)
         self.db = db
         self.notifier = notifier
@@ -171,4 +175,97 @@ class JobHunterBot(discord.Client):
                 job_id=job["id"],
                 company=job["company_name"],
                 error=str(e),
+            )
+
+    # ── URL-based resume generation ─────────────────────────────────────────
+
+    async def on_message(self, message: discord.Message) -> None:
+        """When the user posts a job URL, fetch the job and generate a resume."""
+        # Ignore the bot's own messages and messages outside the target channel
+        if message.author.id == self.user.id:
+            return
+        if message.channel.id != self.channel_id:
+            return
+
+        urls = extract_urls(message.content)
+        if not urls:
+            return
+
+        # Process only the first job URL found in the message
+        url = urls[0]
+        log.info("url_message_received", url=url, author=str(message.author))
+
+        # Acknowledge immediately so the user knows the bot picked it up
+        await message.add_reaction("👀")
+
+        job = await fetch_job_from_url(url)
+        if not job:
+            await message.reply(
+                "⚠️ Couldn't fetch job details from that URL. "
+                "Try a Greenhouse, Lever, or Ashby link."
+            )
+            return
+
+        # If title/company are missing (generic scrape), ask the user to clarify
+        if not job.get("title") or not job.get("company"):
+            log.warning("url_job_incomplete", url=url, job=job)
+            await message.reply(
+                f"⚠️ Fetched the page but couldn't extract a job title/company.\n"
+                f"**Title**: {job.get('title') or '_(unknown)_'}\n"
+                f"**Company**: {job.get('company') or '_(unknown)_'}\n\n"
+                "Please paste a direct Greenhouse / Lever / Ashby link."
+            )
+            return
+
+        log.info(
+            "url_job_fetched",
+            title=job["title"],
+            company=job["company"],
+            source=job.get("source_board"),
+        )
+
+        status_msg = await message.reply(
+            f"⚙️ Generating resume for **{job['title']}** at **{job['company']}**…"
+        )
+
+        try:
+            job_data = {
+                "title": job["title"],
+                "company": job["company"],
+                "location": job.get("location") or "",
+                "url": job["url"],
+                "description": job.get("description") or "",
+            }
+            pdf_bytes = generate_resume(job_data, self.master, self.openai_api_key)
+            filename = _make_filename(job["company"], job["title"])
+
+            log.info(
+                "resume_generated_from_url",
+                company=job["company"],
+                title=job["title"],
+                bytes=len(pdf_bytes),
+                filename=filename,
+            )
+
+            await status_msg.delete()
+            sent = await self.notifier.reply_with_resume(
+                channel_id=str(self.channel_id),
+                message_id=str(message.id),
+                pdf_bytes=pdf_bytes,
+                filename=filename,
+                bot_token=self.bot_token,
+            )
+
+            if not sent:
+                log.error("url_resume_send_failed", company=job["company"])
+
+        except Exception as e:
+            log.error(
+                "url_resume_generation_failed",
+                url=url,
+                company=job.get("company"),
+                error=str(e),
+            )
+            await status_msg.edit(
+                content=f"❌ Resume generation failed: {e}"
             )

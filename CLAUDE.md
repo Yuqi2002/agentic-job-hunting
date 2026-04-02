@@ -29,8 +29,15 @@ An automated pipeline that detects job postings in near-real-time from ATS APIs 
     - Shows: company, location, compensation, match %, relevant keywords
     - Prompt: "React with ✅ to generate resume"
 
+  - **URL-Based Resume Generation** (NEW):
+    - Post job links to Discord → bot instantly fetches + tailors resume
+    - Supports Greenhouse, Lever, Ashby URLs (auto-detects ATS)
+    - Falls back to generic web scraping for unknown job boards
+    - Message content intent required (enabled in Discord settings)
+
   - **Human-in-the-Loop Approval System** (`src/bot/listener.py`):
-    - Discord bot listens for ✅ reactions
+    - Discord bot listens for ✅ reactions on webhook embeds
+    - Discord bot listens for URLs posted in messages
     - On approval: instantly triggers resume generation
     - Names PDF after job: `Company_JobTitle_Resume.pdf`
     - Replies to original message with PDF attached
@@ -41,8 +48,9 @@ An automated pipeline that detects job postings in near-real-time from ATS APIs 
     3. `ats.py` — GPT-4o mini: optimizes bullets for ATS (7 rules)
     4. `compiler.py` — Pure Python: LaTeX escape + render + compile
 
-  - **11 comprehensive tests** (all passing) with full visibility
+  - **12+ comprehensive tests** (all passing) with full visibility
   - **e2e tested**: Full approval flow validated (detect → summarize → approve → generate → reply)
+  - **e2e tested**: URL-based resume generation tested live
   - See `RESUME_PIPELINE.md` for detailed flow and test results
 
 ## Target Roles
@@ -107,14 +115,16 @@ An automated pipeline that detects job postings in near-real-time from ATS APIs 
 ### Layer 4: Human-in-the-Loop Approval (NEW)
 - **Discord Bot Listener** (`src/bot/listener.py`):
   - Runs alongside the scheduler
-  - Listens for ✅ reactions on messages in the configured channel
+  - **Reaction-based**: Listens for ✅ reactions on webhook embeds
+  - **URL-based**: Listens for job URLs posted directly in channel (NEW)
   - Requires: `DISCORD_BOT_TOKEN` and `DISCORD_CHANNEL_ID` in `.env`
-  - Sets job status to `approval_status = 'approved'`
+  - Message content intent required (enabled in Discord Developer Portal)
 
-- **Resume Generation on Approval**:
-  - Only triggered when user reacts ✅
-  - Skips jobs that are already approved or have resume sent
-  - Instant trigger on reaction detection
+- **Resume Generation Triggers**:
+  - **✅ Reaction**: React to auto-detected job summaries
+  - **URL Post**: Post any Greenhouse/Lever/Ashby URL (auto-detected, instant generation)
+  - `src/detection/url_scraper.py` fetches job details, auto-detects ATS
+  - Only triggered when user explicitly approves (saves tokens on rejected jobs)
 
 ### Layer 5: Resume Generation (COMPLETE — Phase 2)
 **Entry point**: `src/resume/__init__.py` — exports `generate_resume(job, master, api_key) -> bytes`
@@ -169,11 +179,15 @@ src/resume/
 └── summarizer.py           # GPT-4o mini: extract comp + calculate match % for jobs
 
 src/bot/
-└── listener.py             # Discord bot: listens for ✅ reactions, triggers resume generation
+└── listener.py             # Discord bot: listens for ✅ reactions, listens for URLs in messages
+
+src/detection/
+└── url_scraper.py          # Fetch individual job from URL (Greenhouse, Lever, Ashby, or generic)
 
 tests/
 ├── test_resume_pipeline.py # 11 comprehensive tests (all passing) with full visibility
 ├── test_e2e_approval.py    # Full approval flow test: detect → summarize → approve → generate → reply
+├── test_url_resume_e2e.py  # End-to-end URL-based resume generation test
 └── test_gpt4o_mini_comparison.py # Haiku vs GPT-4o mini quality comparison
 ```
 
@@ -191,6 +205,7 @@ src/
 │   ├── lever.py            # Lever Postings API scraper
 │   ├── ashby.py            # Ashby Posting API scraper
 │   ├── hackernews.py       # HN Who is Hiring parser (Algolia API)
+│   ├── url_scraper.py      # Fetch single job from URL (auto-detects ATS)
 │   ├── company_sync.py     # Auto-sync company lists from Feashliaa GitHub repo
 │   └── scheduler.py        # APScheduler + BatchRunner (200 companies/batch)
 ├── filter/

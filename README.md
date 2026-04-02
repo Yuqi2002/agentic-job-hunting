@@ -8,24 +8,15 @@ Automatically detect, filter, tailor, and apply to tech jobs using AI. Finds rol
 
 ## Features
 
-### Detection & Filtering
-- ✅ **Job Detection** — Scrapes 6,262+ companies across Greenhouse, Lever, Ashby, HN
-- ✅ **Smart Filtering** — Role keywords, location matching, experience level validation
-- ✅ **Always-On Scheduler** — Batch processing via APScheduler, systemd service-ready
+**🔍 Real-time Job Detection** — Automatically scans 6,000+ companies across all major ATS platforms (Greenhouse, Lever, Ashby) every 30 minutes. Filters by role, location, and experience level so you only see jobs that match your target criteria.
 
-### Job Summaries & Approval
-- ✅ **Job Summaries** — GPT-4o mini extracts compensation + calculates resume match %
-- ✅ **Rich Discord Embeds** — Color-coded by match %, shows keywords + match reasoning
-- ✅ **Human-in-the-Loop Approval** — React ✅ to a message to trigger resume generation (not auto)
+**🎯 AI-Powered Resume Tailoring** — When you approve a job (just react ✅), the system instantly generates a customized resume that highlights your most relevant experiences and projects. No copy-paste needed—it intelligently selects what matters for each role.
 
-### AI Resume Generation
-- ✅ **AI Resume Generation** — GPT-4o mini-powered, modular, deterministic pipeline (91% cheaper)
-- ✅ **ATS Optimization** — 7-rule keyword matching, strong verbs, XYZ bullet structure
-- ✅ **PDF Compilation** — LaTeX-based, fully customizable resume template
-- ✅ **Smart Replies** — Bot replies to original message with named PDF: `Company_JobTitle_Resume.pdf`
+**⚡ ATS Optimization** — Your tailored resume gets automatically optimized for applicant tracking systems: keyword density, strong action verbs, structured bullet points (XYZ format). Increases your chances of getting past screening bots.
 
-### Configuration
-- ✅ **Configurable Roles & Locations** — Easy to modify for your target criteria
+**💬 Discord-Native Workflow** — Get job summaries with compensation and resume match % right in Discord. React with ✅ to approve, and get your tailored PDF in seconds. Post a job link directly to the channel for instant resume generation.
+
+**💰 Affordable** — Uses GPT-4o mini (91% cheaper than alternatives). ~$10/month even with hundreds of jobs.
 
 ---
 
