@@ -22,9 +22,12 @@ from tenacity import (
 from src.detection.ashby import AshbyScraper
 from src.detection.base import BaseScraper, RawJob
 from src.detection.company_sync import CompanyList, sync_companies
+from src.detection.fwddeploy import FwdDeployScraper
 from src.detection.greenhouse import GreenhouseScraper
 from src.detection.hackernews import HackerNewsScraper
 from src.detection.lever import LeverScraper
+from src.detection.remoteok import RemoteOKScraper
+from src.detection.workatastartup import WaaScraper
 from src.logging import get_logger
 
 if TYPE_CHECKING:
@@ -232,6 +235,43 @@ async def build_scheduler(
         id="hackernews_who_is_hiring",
         name="HN Who is Hiring",
         next_run_time=datetime.now(timezone.utc) + timedelta(seconds=10),
+    )
+
+    # FWDDeploy.com — FDE-focused job board, every 6 hours
+    fwddeploy_scraper = FwdDeployScraper()
+    scheduler.add_job(
+        run_scraper,
+        "interval",
+        hours=6,
+        args=[fwddeploy_scraper, pipeline],
+        id="fwddeploy_jobs",
+        name="FWDDeploy.com FDE Jobs",
+        next_run_time=datetime.now(timezone.utc) + timedelta(seconds=15),
+    )
+
+    # Remote OK — every 6 hours (20 fresh remote tech jobs per call)
+    remoteok_scraper = RemoteOKScraper()
+    scheduler.add_job(
+        run_scraper,
+        "interval",
+        hours=6,
+        args=[remoteok_scraper, pipeline],
+        id="remoteok_jobs",
+        name="Remote OK",
+        next_run_time=datetime.now(timezone.utc) + timedelta(seconds=25),
+    )
+
+    # Work at a Startup (YC) — every 6 hours
+    # Requires one-time setup: uv run python -m src.detection.waas_auth
+    waas_scraper = WaaScraper()
+    scheduler.add_job(
+        run_scraper,
+        "interval",
+        hours=6,
+        args=[waas_scraper, pipeline],
+        id="workatastartup_jobs",
+        name="Work at a Startup (YC)",
+        next_run_time=datetime.now(timezone.utc) + timedelta(seconds=20),
     )
 
     # Re-sync company lists daily

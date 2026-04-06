@@ -8,7 +8,7 @@ An automated pipeline that detects job postings in near-real-time from ATS APIs 
 - **AI**: OpenAI GPT-4o mini for summaries + resume generation (selection + ATS optimization)
   - Job summaries: ~$0.92/month (259 jobs/day)
   - Resume generation: ~$10.20/month (on approval only)
-- **HTTP**: httpx + selectolax (Playwright lazy fallback for JS-rendered pages)
+- **HTTP**: httpx + selectolax + Playwright (for JS-rendered / auth-gated pages)
 - **Scheduler**: APScheduler 3.x (AsyncIOScheduler)
 - **Database**: SQLite WAL mode + aiosqlite
 - **Resume Output**: LaTeX template (user's Overleaf template) → pdflatex → .pdf
@@ -61,11 +61,15 @@ An automated pipeline that detects job postings in near-real-time from ATS APIs 
 
 ## Data Sources
 
-### Implemented (Phase 1)
+### Implemented (Phase 1 + Phase 3 partial)
 1. **Greenhouse Boards API** — `boards-api.greenhouse.io/v1/boards/{token}/jobs?content=true` (free, no auth, JSON)
 2. **Lever Postings API** — `api.lever.co/v0/postings/{slug}?mode=json` (free, no auth, JSON)
 3. **Ashby Posting API** — `api.ashbyhq.com/posting-api/job-board/{slug}?includeCompensation=true` (free, no auth, JSON)
 4. **HN Who is Hiring** — HN Algolia API (`hn.algolia.com/api/v1/`) (free, monthly threads)
+5. **FWDDeploy.com** — `fwddeploy.com/jobs.json` (free, no auth, ~350 FDE-specific jobs, every 6h)
+6. **Work at a Startup (YC)** — Playwright-based, requires one-time login (see setup below), every 6h
+7. **Remote OK** — `remoteok.com/api` (free, no auth, ~100 remote tech jobs, every 6h)
+8. **Remotive** — `remotive.com/api/remote-jobs` (free, no auth, low volume ~20 jobs, every 6h)
 
 ### Company Discovery
 - **Auto-synced from [Feashliaa/job-board-aggregator](https://github.com/Feashliaa/job-board-aggregator)**
@@ -74,14 +78,22 @@ An automated pipeline that detects job postings in near-real-time from ATS APIs 
 - Re-synced every 24 hours automatically
 - No manual `companies.yaml` — fully automated discovery
 
-### Future (Phase 3)
-- SimplifyJobs GitHub repos, YC Work at a Startup, The Muse API, Remotive API
+### Researched and Rejected (Phase 3)
+- **Wellfound** — auth-gated, aggressive anti-bot (Cloudflare), declining quality
+- **Otta / Welcome to the Jungle** — auth-gated GraphQL, Euro-focused, low US startup volume
+- **workatastartup.com (YC) Algolia API** — secured key has `tagFilters=[["none"]]` even after login; use Playwright interception instead (implemented)
+- **The Muse** — 494k jobs but dominated by Walmart/retail/enterprise, poor startup signal
+- **Himalayas** — 98k jobs but `q` filter broken, returns unrelated enterprise roles
+- **Jobicy** — 401 unauthorized
+- **Arbeitnow** — 25 jobs, Germany-focused
+- **levels.fyi** — paid enterprise API only
+- **SimplifyJobs GitHub** — Markdown tables, not machine-readable
+- **Triplebyte** — defunct
+- **LinkedIn/Indeed** — oversaturated, aggressive anti-bot, no public API
 
-### Skip
-- Wellfound (auth-gated, anti-bot, declining quality)
-- Otta (auth required)
-- Triplebyte (defunct)
-- LinkedIn/Indeed (oversaturated, aggressive anti-bot)
+### Future (Phase 3 remaining)
+- iCIMS API (many enterprise companies; FWDDeploy surfaces these but no direct scraper yet)
+- Workday API (same — high volume but complex auth)
 
 ## Architecture — 6 Layer Pipeline
 
@@ -89,6 +101,7 @@ An automated pipeline that detects job postings in near-real-time from ATS APIs 
 - **Batch processing**: 200 companies per batch, every 30 minutes, 1.5s delay between requests
 - Full cycle through all 6,262 companies takes ~2.5 hours
 - HN: every 6 hours, finds latest thread via Algolia `author_whoishiring` tag
+- FWDDeploy, Remote OK, Remotive, Work at a Startup: every 6 hours (single API call each)
 - Dedup: exact on `UNIQUE(source_board, external_id)` — SQLite handles it via INSERT OR IGNORE
 - Track scrape runs in `scrape_runs` table
 
@@ -182,7 +195,12 @@ src/bot/
 └── listener.py             # Discord bot: listens for ✅ reactions, listens for URLs in messages
 
 src/detection/
-└── url_scraper.py          # Fetch individual job from URL (Greenhouse, Lever, Ashby, or generic)
+├── url_scraper.py          # Fetch individual job from URL (Greenhouse, Lever, Ashby, or generic)
+├── fwddeploy.py            # FWDDeploy.com — free JSON API, ~350 FDE-specific jobs
+├── remoteok.py             # Remote OK — free JSON API, ~100 remote tech jobs
+├── remotive.py             # Remotive — free JSON API, low volume remote jobs
+├── workatastartup.py       # Work at a Startup (YC) — Playwright session + /companies/fetch interception
+└── waas_auth.py            # YC SSO login script — run once to save data/waas_state.json
 
 tests/
 ├── test_resume_pipeline.py # 11 comprehensive tests (all passing) with full visibility
@@ -221,7 +239,10 @@ data/
 │   └── ashby_companies.json
 ├── jobs.db                 # (gitignored) SQLite database
 ├── tailored_resume.pdf     # (gitignored) Latest generated resume PDF
-└── debug_resume.tex        # (gitignored) Saved on LaTeX compile failure for debugging
+├── debug_resume.tex        # (gitignored) Saved on LaTeX compile failure for debugging
+├── waas_state.json         # (gitignored) Playwright browser state for workatastartup.com
+├── waas_cookies.json       # (gitignored) Raw cookies saved at login (legacy/inspection)
+└── waas_algolia_key.txt    # (gitignored) Algolia key (restricted; not used by scraper)
 
 templates/
 └── resume.tex              # LaTeX template with Jinja2 variables (confirmed working)
@@ -231,6 +252,22 @@ test_e2e_approval.py        # Full approval flow: detect → summarize → send 
 test_filter_scale.py        # Estimate daily volume: sample companies, extrapolate total, estimate costs
 RESUME_PIPELINE.md          # Detailed pipeline flow, test results, and guarantees
 ```
+
+## Work at a Startup (YC) — One-Time Setup
+The `workatastartup.com` scraper requires a YC account (same as HN / Bookface login).
+
+```bash
+# Add to .env:
+WAAS_YC_USERNAME=your_ycid
+WAAS_YC_PASSWORD=your_password
+
+# Run once to save session state:
+uv run python -m src.detection.waas_auth
+```
+
+This opens headless Chromium, logs in via YC SSO, and saves `data/waas_state.json`. The recurring scraper loads this state — no browser needed per scrape cycle. Re-run when cookies expire (scraper logs `waas_session_expired`; typically monthly).
+
+**If reCAPTCHA fires**: Run from a local machine (same IP as normal browser usage), then copy `data/waas_state.json` to the VPS.
 
 ## Config (.env)
 ```
@@ -254,6 +291,10 @@ DB_PATH=data/jobs.db
 LOG_LEVEL=INFO
 CACHE_DIR=data/cache
 ANTHROPIC_API_KEY=sk-ant-...        # Optional (kept for reference, not used in resume pipeline)
+
+# Work at a Startup (YC) — optional, enables workatastartup.com scraper
+WAAS_YC_USERNAME=your_ycid          # Same as HN / Bookface login
+WAAS_YC_PASSWORD=your_password      # Run waas_auth.py after setting these
 ```
 
 **IMPORTANT**:
@@ -325,6 +366,24 @@ ANTHROPIC_API_KEY=sk-ant-...        # Optional (kept for reference, not used in 
 7. Bot starts automatically when `DISCORD_BOT_TOKEN` + `DISCORD_CHANNEL_ID` are set
 **Key**: The bot and webhook can coexist — webhook sends initial summaries, bot replies with resumes.
 
+### Work at a Startup — Algolia key is always restricted
+**Problem**: `window.AlgoliaOpts.key` on workatastartup.com always contains `tagFilters=[["none"]]` — even when logged in. The auth-scoped key is fetched via a separate XHR after page load and is not accessible from window state.
+**Solution**: Don't use Algolia directly. Instead, use Playwright with `context.storage_state` to restore the full session, navigate the companies page, and intercept the `/companies/fetch` POST responses that the React app fires naturally. The page does the Algolia search internally; we capture the results.
+
+### Work at a Startup — YC SSO multi-step redirect
+**Problem**: After clicking the login button, YC SSO does a server redirect to `workatastartup.com` followed immediately by an Inertia.js client-side navigation. Playwright's `wait_for_url` and `expect_navigation` both time out because they wait for `load` event on the second (client-side) navigation, which never fires.
+**Solution**: Use `wait_for_url(..., wait_until="commit")` which returns as soon as the URL matches without waiting for a load event. Then `wait_for_timeout(3000)` to let Inertia settle.
+
+### Work at a Startup — storage_state must be saved on workatastartup.com, not account.ycombinator.com
+**Problem**: `context.storage_state()` must be called after the redirect completes. If saved while still on `account.ycombinator.com`, the restored context will lack `www.workatastartup.com` cookies and every `/companies` request will 302 to the homepage.
+**Solution**: Call `storage_state()` only after `wait_for_url("*workatastartup.com*", ...)` confirms we're on the right domain.
+
+### FWDDeploy — most jobs link to iCIMS/Workday, not Greenhouse/Lever/Ashby
+**Note**: FWDDeploy is a pure aggregator. ~60% of its jobs link to ATS platforms not covered by the main batch scraper (iCIMS, Workday, Recruiterflow). This makes it genuinely additive — not duplicating what Greenhouse/Lever/Ashby already surface.
+
+### Remote OK — returns ~100 jobs (not 20 as docs suggest)
+**Note**: The `remoteok.com/api` endpoint returns more jobs than the 20 shown in their documentation. In practice, ~97 jobs per call. No pagination needed. Role filtering is handled by the existing filter layer — don't pre-filter at the API level as there's no reliable tag-based API filter.
+
 ## API Verification Commands
 ```bash
 # Greenhouse
@@ -338,6 +397,24 @@ curl -s "https://api.ashbyhq.com/posting-api/job-board/1password?includeCompensa
 
 # HN Algolia — latest Who is Hiring thread
 curl -s "https://hn.algolia.com/api/v1/search_by_date?query=%22who+is+hiring%22&tags=story,author_whoishiring&hitsPerPage=1"
+
+# FWDDeploy
+curl -s "https://www.fwddeploy.com/jobs.json" | python3 -c "import sys,json; d=json.load(sys.stdin); print(len(d))"
+
+# Remote OK
+curl -s "https://remoteok.com/api" -H "Accept: application/json" | python3 -c "import sys,json; d=json.load(sys.stdin); print(len([x for x in d if 'id' in x]))"
+
+# Work at a Startup (YC) — verify login state is still valid
+uv run python -c "
+import asyncio, httpx
+from src.detection.workatastartup import WaaScraper
+async def t():
+    s = WaaScraper()
+    async with httpx.AsyncClient(timeout=30.0) as c:
+        jobs = await s.fetch_jobs(c)
+    print(f'{len(jobs)} jobs found')
+asyncio.run(t())
+"
 ```
 
 ## Documentation

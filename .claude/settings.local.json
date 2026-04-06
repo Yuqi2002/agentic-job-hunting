@@ -56,7 +56,29 @@
       "Bash(python -m pytest tests/test_resume_pipeline.py -v --tb=short)",
       "Bash(python test_e2e_approval.py)",
       "Bash(xargs -I{} kill -0 {})",
-      "Bash(python -c \":*)"
+      "Bash(python -c \":*)",
+      "Bash(gh repo:*)",
+      "Bash(gh api:*)",
+      "WebFetch(domain:www.usesprout.com)",
+      "Bash(pkill -f \"python -m src.main\")",
+      "WebFetch(domain:www.themuse.com)",
+      "WebFetch(domain:remoteok.com)",
+      "Bash(curl -s https://www.workatastartup.com/robots.txt)",
+      "Bash(curl -s https://wellfound.com/robots.txt)",
+      "Bash(curl -s https://www.otta.com/robots.txt)",
+      "Bash(curl -s https://fwddeploy.com/robots.txt)",
+      "Bash(curl -s -I https://fwddeploy.com)",
+      "WebFetch(domain:www.workatastartup.com)",
+      "Bash(curl -s https://www.workatastartup.com/api/companies/search -H 'Accept: application/json')",
+      "Bash(curl -s https://bookface-static.ycombinator.com/vite/assets/index-DIaMrY2Y.js)",
+      "Bash(curl -s https://bookface-static.ycombinator.com/vite/assets/client-EbfiHqs-.js)",
+      "Bash(uv run python -c \":*)",
+      "Bash(curl -s https://www.workatastartup.com)",
+      "Bash(curl -s \"https://remoteok.com/api\" -H \"User-Agent: Mozilla/5.0\")",
+      "Bash(curl -s \"https://www.themuse.com/api/public/jobs?page=1&per_page=3\")",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(json.dumps\\(d, indent=2\\)\\)\")",
+      "Bash(curl -s \"https://jobicy.com/api/v0/jobs?count=3\")",
+      "WebFetch(domain:jobicy.com)"
     ]
   }
 }
