@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     openai_api_key: str = ""
     # Stored as comma-separated strings in .env, split in validator
     target_cities: str = "San Francisco,New York,Seattle,Austin"
-    target_roles: str = "software engineer,ai engineer,ml engineer,machine learning engineer,forward deployed engineer,solutions engineer,sales engineer"
+    target_roles: str = "software engineer,ai engineer,forward deployed engineer,solutions engineer,sales engineer"
     max_experience_years: int = 4
     db_path: Path = Path("data/jobs.db")
     log_level: str = "INFO"

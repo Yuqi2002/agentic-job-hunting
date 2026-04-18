@@ -41,8 +41,6 @@ _TITLE_KEYWORDS = [
     "presales",
     "software engineer",
     "ai engineer",
-    "ml engineer",
-    "machine learning",
 ]
 
 

@@ -66,7 +66,6 @@ class JobMatcher:
             abbrev_map = {
                 "swe": "software engineer",
                 "sde": "software engineer",
-                "mle": "ml engineer",
             }
             for abbrev, full_role in abbrev_map.items():
                 if re.search(rf"\b{abbrev}\b", title_lower):
